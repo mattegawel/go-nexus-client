@@ -18,7 +18,7 @@ func TestRepositoryRead(t *testing.T) {
 
 	if repo != nil {
 		assert.Equal(t, name, repo.Name)
-		assert.NotNil(t, repo.RepositoryCleanup)
+		assert.Nil(t, repo.RepositoryCleanup)
 		assert.NotNil(t, repo.RepositoryProxy)
 	}
 }
