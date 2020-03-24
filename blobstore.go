@@ -80,13 +80,10 @@ func (c client) BlobstoreRead(id string) (*Blobstore, error) {
 }
 
 func (c client) BlobstoreReadSpecified(currentBs Blobstore) (*Blobstore, error) {
-	body, resp, err := c.Get(blobstoreAPIEndpoint, nil)
+	body, err := c.RequestWrapper(c.Get, blobstoreAPIEndpoint, nil)
+
 	if err != nil {
 		return nil, err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("could not read blobstores: HTTP: %d, %s", resp.StatusCode, string(body))
 	}
 
 	var blobstores []Blobstore
@@ -96,17 +93,17 @@ func (c client) BlobstoreReadSpecified(currentBs Blobstore) (*Blobstore, error) 
 
 	for _, bs := range blobstores {
 		if bs.Name == currentBs.Name {
-			innerBody, innerResp, innerErr := c.Get(fmt.Sprintf("%s/%s/%s", blobstoreAPIEndpoint, strings.ToLower(bs.Type), bs.Name), nil)
-			var blobstoreFileSpecified BlobstoreFileSpecified
+			innerBody, innerErr := c.RequestWrapper(c.Get, fmt.Sprintf("%s/%s/%s", blobstoreAPIEndpoint, strings.ToLower(bs.Type), bs.Name), nil)
 
 			if innerErr != nil {
-				return nil, err
+				return nil, innerErr
 			}
 
-			if resp.StatusCode != http.StatusOK {
-				return nil, fmt.Errorf("could not read blobstoreFileSpecified: HTTP: %d, %s", innerResp.StatusCode, string(innerBody))
+			if bs.Type != BlobstoreTypeFile {
+				return nil, fmt.Errorf("blobstore types other than `%s` are not supported yet", BlobstoreTypeFile)
 			}
 
+			var blobstoreFileSpecified BlobstoreFileSpecified
 			if err := json.Unmarshal(innerBody, &blobstoreFileSpecified); err != nil {
 				return nil, fmt.Errorf("could not unmarshal blobstoreFileSpecified: %v", err)
 			}
