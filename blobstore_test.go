@@ -22,11 +22,10 @@ func TestBlobstoreFile(t *testing.T) {
 	createErr := client.BlobstoreCreate(bs)
 	assert.Nil(t, createErr)
 
-	bsCreated, err := client.BlobstoreRead(bs.Name)
+	bsCreated, err := client.BlobstoreReadSpecified(bs)
 	assert.Nil(t, err)
 	assert.NotNil(t, bsCreated)
-	// Path not returned by API, not possible to test :-/
-	// assert.Equal(t, bsPath, bsCreated.Path)
+	assert.Equal(t, bsPath, bsCreated.Path)
 	assert.Equal(t, bsType, bsCreated.Type)
 	assert.Equal(t, 0, bsCreated.BlobCount)
 	assert.Nil(t, bsCreated.BlobstoreSoftQuota)

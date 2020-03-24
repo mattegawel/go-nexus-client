@@ -32,6 +32,11 @@ type BlobstoreSoftQuota struct {
 	Type  string `json:"type"`
 }
 
+type BlobstoreFileSpecified struct {
+	Path                string `json:"path"`
+	*BlobstoreSoftQuota `json:"softQuota,omitempty"`
+}
+
 func (c client) BlobstoreCreate(bs Blobstore) error {
 	ioReader, err := jsonMarshalInterfaceToIOReader(bs)
 	if err != nil {
@@ -67,6 +72,46 @@ func (c client) BlobstoreRead(id string) (*Blobstore, error) {
 
 	for _, bs := range blobstores {
 		if bs.Name == id {
+			return &bs, nil
+		}
+	}
+
+	return nil, nil
+}
+
+func (c client) BlobstoreReadSpecified(currentBs Blobstore) (*Blobstore, error) {
+	body, resp, err := c.Get(blobstoreAPIEndpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("could not read blobstores: HTTP: %d, %s", resp.StatusCode, string(body))
+	}
+
+	var blobstores []Blobstore
+	if err := json.Unmarshal(body, &blobstores); err != nil {
+		return nil, fmt.Errorf("could not unmarshal blobstore: %v", err)
+	}
+
+	for _, bs := range blobstores {
+		if bs.Name == currentBs.Name {
+			innerBody, innerResp, innerErr := c.Get(fmt.Sprintf("%s/%s/%s", blobstoreAPIEndpoint, strings.ToLower(bs.Type), bs.Name), nil)
+			var blobstoreFileSpecified BlobstoreFileSpecified
+
+			if innerErr != nil {
+				return nil, err
+			}
+
+			if resp.StatusCode != http.StatusOK {
+				return nil, fmt.Errorf("could not read blobstoreFileSpecified: HTTP: %d, %s", innerResp.StatusCode, string(innerBody))
+			}
+
+			if err := json.Unmarshal(innerBody, &blobstoreFileSpecified); err != nil {
+				return nil, fmt.Errorf("could not unmarshal blobstoreFileSpecified: %v", err)
+			}
+
+			bs.Path = blobstoreFileSpecified.Path
 			return &bs, nil
 		}
 	}
