@@ -135,7 +135,7 @@ func (c client) BlobstoreUpdate(id string, bs Blobstore) error {
 }
 
 func (c client) BlobstoreDelete(id string) error {
-	body, resp, err := c.Delete(fmt.Sprintf("%s/%s", blobstoreAPIEndpoint, id))
+	body, resp, err := c.Delete(fmt.Sprintf("%s/%s", blobstoreAPIEndpoint, id), nil)
 	if err != nil {
 		return err
 	}

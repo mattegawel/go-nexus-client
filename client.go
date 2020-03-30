@@ -126,8 +126,8 @@ func (c *client) Put(endpoint string, payload io.Reader) ([]byte, *http.Response
 	return c.execute(http.MethodPut, endpoint, payload)
 }
 
-func (c *client) Delete(endpoint string) ([]byte, *http.Response, error) {
-	return c.execute(http.MethodDelete, endpoint, nil)
+func (c *client) Delete(endpoint string, payload io.Reader) ([]byte, *http.Response, error) {
+	return c.execute(http.MethodDelete, endpoint, payload)
 }
 
 func (c *client) RequestWrapper(requestFn func(string, io.Reader) ([]byte, *http.Response, error), endpoint string, payload io.Reader) ([]byte, error) {
