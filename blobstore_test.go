@@ -37,7 +37,7 @@ func TestBlobstoreFile(t *testing.T) {
 	err = client.BlobstoreUpdate(bsCreated.Name, *bsCreated)
 	assert.Nil(t, err)
 
-	bsUpdated, err := client.BlobstoreRead(bsCreated.Name)
+	bsUpdated, err := client.BlobstoreReadSpecified(bsCreated.Name)
 	assert.Nil(t, err)
 	assert.NotNil(t, bsUpdated)
 	assert.NotNil(t, bsUpdated.BlobstoreSoftQuota)
@@ -53,11 +53,53 @@ func TestBlobstoreRead(t *testing.T) {
 
 	bsName := "default"
 
-	bs, err := client.BlobstoreRead(bsName)
+	bs, err := client.BlobstoreReadSpecified(bsName)
 	assert.Nil(t, err)
 	assert.NotNil(t, bs)
 
 	if bs != nil {
 		assert.Equal(t, bsName, bs.Name)
+		assert.NotEqual(t, "", bs.Path)
+	}
+}
+
+func TestBlobstoreS3(t *testing.T) {
+	client := NewClient(getDefaultConfig())
+
+	bsName := "test-blobstore-s3"
+	bsType := BlobstoreTypeS3
+
+	bs := Blobstore{
+		Name: bsName,
+		Type: bsType,
+		BlobstoreS3BucketConfiguration: &BlobstoreS3BucketConfiguration{
+			BlobstoreS3Bucket: &BlobstoreS3Bucket{
+				Name:   getEnv("AWS_BUCKET_NAME", "terraform-provider-nexus-s3-test"),
+				Region: getEnv("AWS_DEFAULT_REGION", "us-central-1"),
+			},
+			BlobstoreS3BucketSecurity: &BlobstoreS3BucketSecurity{
+				AccessKeyID:     getEnv("AWS_ACCESS_KEY_ID", "AWS_ACCESS_KEY_ID must be set"),
+				SecretAccessKey: getEnv("AWS_SECRET_ACCESS_KEY", "AWS_SECRET_ACCESS_KEY must be set"),
+			},
+			BlobstoreS3AdvancedBucketConnection: &BlobstoreS3AdvancedBucketConnection{
+				Endpoint:       getEnv("AWS_ENDPOINT", "localhost:9000"),
+			},
+		},
+	}
+
+	err := client.BlobstoreCreate(bs)
+	assert.Nil(t, err)
+
+	s3BS, err := client.BlobstoreReadSpecified(bs.Name)
+	assert.Nil(t, err)
+	assert.NotNil(t, s3BS)
+	if s3BS != nil {
+		assert.Equal(t, BlobstoreTypeS3, s3BS.Type)
+		assert.NotNil(t, s3BS.BlobstoreS3BucketConfiguration)
+		assert.NotNil(t, s3BS.BlobstoreS3BucketConfiguration.BlobstoreS3Bucket)
+		assert.NotNil(t, s3BS.BlobstoreS3BucketConfiguration.BlobstoreS3BucketSecurity)
+
+		err = client.BlobstoreDelete(bs.Name)
+		assert.Nil(t, err)
 	}
 }

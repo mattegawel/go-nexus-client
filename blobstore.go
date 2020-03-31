@@ -19,11 +19,12 @@ type Blobstore struct {
 	AvailableSpaceInBytes int    `json:"availableSpaceInBytes"`
 	BlobCount             int    `json:"blobCount"`
 	Name                  string `json:"name"`
-	Path                  string `json:"path"`
+	Path                  string `json:"path,omitempty"` // only if type File
 	TotalSizeInBytes      int    `json:"totalSizeInBytes"`
 	Type                  string `json:"type"`
 
-	*BlobstoreSoftQuota `json:"softQuota,omitempty"`
+	*BlobstoreS3BucketConfiguration `json:"bucketConfiguration,omitempty"`
+	*BlobstoreSoftQuota             `json:"softQuota,omitempty"`
 }
 
 // BlobstoreSoftQuota data
@@ -32,9 +33,47 @@ type BlobstoreSoftQuota struct {
 	Type  string `json:"type"`
 }
 
-type BlobstoreFileSpecified struct {
-	Path                string `json:"path"`
-	*BlobstoreSoftQuota `json:"softQuota,omitempty"`
+// BlobstoreS3BucketConfiguration data
+type BlobstoreS3BucketConfiguration struct {
+	*BlobstoreS3Bucket                   `json:"bucket,omitempty"`
+	*BlobstoreS3Encryption               `json:"encryption,omitempty"`
+	*BlobstoreS3BucketSecurity           `json:"bucketSecurity,omitempty"`
+	*BlobstoreS3AdvancedBucketConnection `json:"advancedBucketConnection,omitempty"`
+}
+
+// BlobstoreS3Bucket data
+type BlobstoreS3Bucket struct {
+	Expiration int    `json:"expiration"`
+	Name       string `json:"name"`
+	Prefix     string `json:"prefix"`
+	Region     string `json:"region"`
+}
+
+// BlobstoreS3Encryption data
+type BlobstoreS3Encryption struct {
+	Key  string `json:"encryptionKey"`
+	Type string `json:"encryptionType"`
+}
+
+// BlobstoreS3BucketSecurity data
+type BlobstoreS3BucketSecurity struct {
+	AccessKeyID     string `json:"accessKeyId"`
+	Role            string `json:"role"`
+	SecretAccessKey string `json:"secretAccessKey"`
+	SessionToken    string `json:"sessionToken"`
+}
+
+// BlobstoreS3AdvancedBucketConnection data
+type BlobstoreS3AdvancedBucketConnection struct {
+	Endpoint       string `json:"endpoint"`
+	SignerType     string `json:"signerType"`
+	ForcePathStyle bool   `json:"forcePathStyle"`
+}
+
+type BlobstoreSpecified struct {
+	Path					 string `json:"path,omitempty"`
+	*BlobstoreS3BucketConfiguration `json:"bucketConfiguration,omitempty"`
+	*BlobstoreSoftQuota 			`json:"softQuota,omitempty"`
 }
 
 func (c client) BlobstoreCreate(bs Blobstore) error {
@@ -48,7 +87,7 @@ func (c client) BlobstoreCreate(bs Blobstore) error {
 		return err
 	}
 
-	if resp.StatusCode != http.StatusNoContent {
+	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusCreated {
 		return fmt.Errorf("could not create blobstore \"%s\": HTTP: %d, %s", bs.Name, resp.StatusCode, string(body))
 	}
 
@@ -67,7 +106,7 @@ func (c client) BlobstoreRead(id string) (*Blobstore, error) {
 
 	var blobstores []Blobstore
 	if err := json.Unmarshal(body, &blobstores); err != nil {
-		return nil, fmt.Errorf("could not unmarshal blobstore: %v", err)
+		return nil, fmt.Errorf("could not unmarshal blobstore %s: %v", id, err)
 	}
 
 	for _, bs := range blobstores {
@@ -103,12 +142,13 @@ func (c client) BlobstoreReadSpecified(id string) (*Blobstore, error) {
 				return nil, fmt.Errorf("blobstore types other than `%s` are not supported yet", BlobstoreTypeFile)
 			}
 
-			var blobstoreFileSpecified BlobstoreFileSpecified
-			if err := json.Unmarshal(innerBody, &blobstoreFileSpecified); err != nil {
-				return nil, fmt.Errorf("could not unmarshal blobstoreFileSpecified: %v", err)
+			var blobstoreSpecified BlobstoreSpecified
+			if err := json.Unmarshal(innerBody, &blobstoreSpecified); err != nil {
+				return nil, fmt.Errorf("could not unmarshal blobstoreSpecified: %v", err)
 			}
 
-			bs.Path = blobstoreFileSpecified.Path
+			bs.Path = blobstoreSpecified.Path
+			bs.BlobstoreS3BucketConfiguration = blobstoreSpecified.BlobstoreS3BucketConfiguration
 			return &bs, nil
 		}
 	}
