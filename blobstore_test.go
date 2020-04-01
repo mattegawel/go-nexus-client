@@ -2,7 +2,7 @@ package client
 
 import (
 	"testing"
-
+	"strconv"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -68,21 +68,25 @@ func TestBlobstoreS3(t *testing.T) {
 
 	bsName := "test-blobstore-s3"
 	bsType := BlobstoreTypeS3
+	var forcePathStyle, _ = strconv.ParseBool(getEnv("AWS_FORCE_PATH", "true"))
+	var expiration, _ = strconv.Atoi(getEnv("AWS_EXPIRATION", "1"))
 
 	bs := Blobstore{
 		Name: bsName,
 		Type: bsType,
 		BlobstoreS3BucketConfiguration: &BlobstoreS3BucketConfiguration{
 			BlobstoreS3Bucket: &BlobstoreS3Bucket{
-				Name:   getEnv("AWS_BUCKET_NAME", "terraform-provider-nexus-s3-test"),
-				Region: getEnv("AWS_DEFAULT_REGION", "us-central-1"),
+				Name:   	getEnv("AWS_BUCKET_NAME", "test"),
+				Region: 	getEnv("AWS_DEFAULT_REGION", "eu-central-1"),
+				Expiration: expiration,
 			},
 			BlobstoreS3BucketSecurity: &BlobstoreS3BucketSecurity{
-				AccessKeyID:     getEnv("AWS_ACCESS_KEY_ID", "AWS_ACCESS_KEY_ID must be set"),
-				SecretAccessKey: getEnv("AWS_SECRET_ACCESS_KEY", "AWS_SECRET_ACCESS_KEY must be set"),
+				AccessKeyID:     getEnv("AWS_ACCESS_KEY_ID", "minioadmin"),
+				SecretAccessKey: getEnv("AWS_SECRET_ACCESS_KEY", "minioadmin"),
 			},
 			BlobstoreS3AdvancedBucketConnection: &BlobstoreS3AdvancedBucketConnection{
-				Endpoint:       getEnv("AWS_ENDPOINT", "localhost:9000"),
+				Endpoint:       getEnv("AWS_ENDPOINT", "http://minio:9000"),
+				ForcePathStyle: forcePathStyle,
 			},
 		},
 	}

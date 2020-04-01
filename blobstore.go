@@ -138,10 +138,6 @@ func (c client) BlobstoreReadSpecified(id string) (*Blobstore, error) {
 				return nil, innerErr
 			}
 
-			if bs.Type != BlobstoreTypeFile {
-				return nil, fmt.Errorf("blobstore types other than `%s` are not supported yet", BlobstoreTypeFile)
-			}
-
 			var blobstoreSpecified BlobstoreSpecified
 			if err := json.Unmarshal(innerBody, &blobstoreSpecified); err != nil {
 				return nil, fmt.Errorf("could not unmarshal blobstoreSpecified: %v", err)
