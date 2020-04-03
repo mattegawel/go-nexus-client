@@ -92,8 +92,8 @@ type RepositoryDocker struct {
 
 // RepositoryDockerProxy contains data of a Docker Proxy Repository
 type RepositoryDockerProxy struct {
-	IndexType string  `json:"indexType"`
-	IndexURL  *string `json:"indexUrl,omitempty"`
+	IndexType string `json:"indexType"`
+	IndexURL  string `json:"indexUrl,omitempty"`
 }
 
 // RepositoryGroup contains repository group configuration data
